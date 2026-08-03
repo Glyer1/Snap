@@ -21,6 +21,7 @@ Window {
         id: apiModel
         ListElement {
             name: "QFile::open"
+            head: ""
             desc: "打开文件"
             example: "file.open(QIODevice::ReadOnly)"
             params: "QIODevice::OpenMode mode"
@@ -28,6 +29,7 @@ Window {
         }
         ListElement {
             name: "QString::toInt"
+            head: ""
             desc: "字符串转整数"
             example: "QString(\"123\").toInt()"
             params: "bool *ok = nullptr, int base = 10"
@@ -35,6 +37,7 @@ Window {
         }
         ListElement {
             name: "QByteArray::toHex"
+            head: ""
             desc: "转十六进制"
             example: "ba.toHex()"
             params: "无参数"
@@ -42,6 +45,7 @@ Window {
         }
         ListElement {
             name: "QJsonDocument::fromJson"
+            head: ""
             desc: "解析JSON"
             example: "QJsonDocument::fromJson(jsonData)"
             params: "const QByteArray &json, QJsonParseError *error = nullptr"
@@ -49,6 +53,7 @@ Window {
         }
         ListElement {
             name: "QThread::msleep"
+            head: ""
             desc: "线程休眠毫秒"
             example: "QThread::msleep(100)"
             params: "unsigned long msecs"
@@ -132,10 +137,11 @@ Window {
                     font.pixelSize: 12
                     onClicked: {
                         detailName.text = name
-                        detailDesc.text = desc
-                        detailParams.text = params
-                        detailExample.text = example
-                        detailDetail.text = detail
+                        neededHead.text = "<b>需要的头文件:</b> " + (head || "无")
+                        detailDesc.text = "<b>解释:</b> " + (desc || "无")
+                        detailParams.text = "<b>参数:</b> " + (params || "无")
+                        detailExample.text = "<b>示例:</b> " + (example || "无")
+                        detailDetail.text = "<b>说明:</b> " + (detail || "无")
                     }
                 }
             }
@@ -169,12 +175,13 @@ Window {
 
                     Text {
                         id: detailName
-                        text: "选择上方的 API 查看详情"
+                        text: "<b>请选择上方的 API 查看详情</b>"
                         font.pixelSize: 15
                         font.bold: true
                         color: "#1A2332"
                         Layout.fillWidth: true
                         wrapMode: Text.Wrap
+                        textFormat: Text.RichText
                     }
 
                     Button {
@@ -186,10 +193,13 @@ Window {
                         enabled: detailName.text !== "选择上方的 API 查看详情"
                         onClicked: {
                             var full = detailName.text + "\n" +
-                                       "参数: " + detailParams.text + "\n" +
-                                       "示例: " + detailExample.text + "\n" +
-                                       "说明: " + detailDetail.text
-                            // 实际复制用 clipboard
+                                       "需要的头文件：" + stripHtml(neededHead.text) + "\n" +
+                                       "解释：" + stripHtml(detailDesc.text) + "\n" +
+                                       "参数: " + stripHtml(detailParams.text) + "\n" +
+                                       "示例: " + stripHtml(detailExample.text) + "\n" +
+                                       "说明: " + stripHtml(detailDetail.text)
+
+                            clipboradUtilsManager.setText(full);
                             console.log("复制内容:", full)
                         }
                     }
@@ -197,49 +207,53 @@ Window {
 
                 Text {
                     id: detailDesc
-                    text: "解释: "
+                    text: "<b>解释</b>: 暂无数据"
                     font.pixelSize: 11
                     color: "#475569"
                     Layout.fillWidth: true
                     wrapMode: Text.Wrap
+                    textFormat: Text.RichText
                 }
 
                 Text {
                     id: neededHead
-                    text: "需要的头文件: "
+                    text: "<b>需要的头文件</b>: 暂无数据"
                     font.pixelSize: 11
                     color: "#475569"
                     Layout.fillWidth: true
                     wrapMode: Text.Wrap
+                    textFormat: Text.RichText
                 }
 
                 Text {
                     id: detailParams
-                    text: "参数: "
+                    text: "<b>参数</b>: 暂无数据"
                     font.pixelSize: 11
                     color: "#475569"
                     Layout.fillWidth: true
                     wrapMode: Text.Wrap
+                    textFormat: Text.RichText
                 }
 
                 Text {
                     id: detailExample
-                    text: "示例: "
+                    text: "<b>示例</b>: 暂无数据"
                     font.pixelSize: 12
-                    color: "#1A2332"
+                    color: "#475569"
                     Layout.fillWidth: true
                     wrapMode: Text.Wrap
-                    font.family: "Courier New"
+                    textFormat: Text.RichText
                 }
 
                 Text {
                     id: detailDetail
-                    text: "说明: "
+                    text: "<b>说明:</b> 暂无数据"
                     font.pixelSize: 12
                     color: "#475569"
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     wrapMode: Text.Wrap
+                    textFormat: Text.RichText
                 }
             }
         }
@@ -277,41 +291,42 @@ Window {
 
     //创建完成组件直接绑定信号自动让函数将apimodel更新
     Component.onCompleted: {
-
         loadConfig()
-
         AppCore.settingsChanged.connect(loadConfig)
 
-        AppCore.searchResultReady.connect(function(results)
-        {
+        AppCore.searchResultReady.connect(function(results) {
             apiModel.clear()
             if (results.length > 0) {
-                var item = results[0]
-                if (item.success) {
-                    // 把 AI 返回的完整内容显示在详情面板
+                // 填充列表
+                for (var i = 0; i < results.length; i++) {
+                    var item = results[i]
                     apiModel.append({
-                        name: "AI 搜索结果",
-                        desc: "点击查看完整回答",
-                        example: "",
-                        params: "",
-                        detail: item.content
-                    })
-                    // 自动选中以展示详情
-                    detailName.text = item.name || "API 名称"
-                    neededHead.text = "需要的头文件: " + (item.head || "无")
-                    detailDesc.text = "解释: " + (item.desc || "无")
-                    detailParams.text = "参数: " + (item.params || "无")
-                    detailExample.text = "示例: " + (item.example || "无")
-                    detailDetail.text = "说明: " + (item.detail || "无")
-                } else {
-                    apiModel.append({
-                        name: "查询失败",
-                        desc: item.errorMessage || "未知错误",
-                        example: "",
-                        params: "",
-                        detail: item.errorMessage || "未知错误"
+                        name: item.name || "未命名",
+                        desc: item.desc || "",
+                        head: item.head || "",
+                        params: item.params || "",
+                        example: item.example || "",
+                        detail: item.detail || ""
                     })
                 }
+                // 自动显示第一条
+                var first = results[0]
+                detailName.text = first.name || "未命名"
+                neededHead.text = "<b>需要的头文件:</b> " + (first.head || "无")
+                detailDesc.text = "<b>解释:</b> " + (first.desc || "无")
+                detailParams.text = "<b>参数:</b> " + (first.params || "无")
+                detailExample.text = "<b>示例:</b> " + (first.example || "无")
+                detailDetail.text = "<b>说明:</b> " + (first.detail || "无")
+            } else {
+                // 无结果
+                apiModel.append({
+                    name: "无结果",
+                    desc: "未找到相关信息",
+                    head: "",
+                    params: "",
+                    example: "",
+                    detail: "请尝试其他关键词"
+                })
             }
         })
     }
@@ -342,6 +357,11 @@ Window {
         if (currentBaseUrl === "https://api.deepseek.com/anthropic") {
             currentBaseUrl = "https://api.deepseek.com/anthropic/v1/messages"
         }
+    }
+
+    //去除html字符串
+    function stripHtml(text) {
+        return text.replace(/<[^>]*>/g, "")
     }
 }
 

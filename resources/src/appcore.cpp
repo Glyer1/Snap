@@ -130,14 +130,15 @@ void AppCore::doSearch(const QString &query, const QString &modelUrl, const QStr
     // system prompt 作为顶层字段（Anthropic 格式），不放入 messages
     request.systemPrompt = QStringLiteral(
         "你是一个编程助手，根据用户的问题，返回可能用到的相关api并给出示例代码。"
-        "若非提供问题而是询问api，直接进行联网搜索查询api内容，含义等信息。除了'xx:{{yy}}...'不要输出其他内容。"
-        "每个api按以下格式输出（可返回多个api，每个api之间用空行分隔,若为普通问题则一个即可）：\n\n"
-        "api名字:{{名字}}\n"
-        "api需引入头:{{引入头文件代码，如 #include <QFile> }}\n"
-        "api解释:{{一句话解释这个API是做什么的}}\n"
-        "api参数解释:{{参数说明}}\n"
-        "api示例:{{示例代码}}\n"
-        "api说明:{{示例的注释解释}}\n"
+        "若非提供问题而是询问api，直接进行联网搜索查询api内容，含义等信息。除了'xx:yy...'不要输出其他内容。"
+        "每个api按以下格式输出（可返回多个api，格式同理，若下面结构为为api1,那么第二个api也是从'api名字:xx'开始，重复一整块，加一空行再到下一个api，以此类推，就为api1+空行+api2+空行+...，每个api之间用空行分隔,若为普通问题则一个即可）：\n"
+        "每块需要严格按照以下格式\n\n"
+        "api名字:名字\n"
+        "api需引入头:引入头文件代码，如 #include <QFile> \n"
+        "api解释:一句话解释这个API是做什么的\n"
+        "api参数解释:参数说明\n"
+        "api示例:示例代码\n"
+        "api说明:示例的注释解释\n"
         "若是提问而非询问api也按照以上格式，但是api名字改成几个字总结问题回答，api解释为回答，api示例为举例，api说明为简单解释回答。除了以上'xx:{{yy}}...'不要输出其他内容。"
     );
 
@@ -150,13 +151,32 @@ void AppCore::doSearch(const QString &query, const QString &modelUrl, const QStr
     // 创建 Worker（传入 Key）
     ApiWorker *worker = new ApiWorker(m_apiKey, this);
     connect(worker, &ApiWorker::finished, this, [this, worker](const Response &response) {
-        // 把 Response 转换成 QVariantList 发给 QML
         QVariantList results;
-        QVariantMap map;
-        map["content"] = response.content;
-        map["success"] = response.success;
-        map["errorMessage"] = response.errorMessage;
-        results.append(map);
+        if (response.success) {
+            // 解析 AI 返回的内容
+            results = JsonUtils::parseApiResponse(response.content);
+            // 如果解析结果为空，说明格式不匹配，把原始内容作为一条放进去
+            if (results.isEmpty()) {
+                QVariantMap fallback;
+                fallback["name"] = "AI 返回内容";
+                fallback["desc"] = "";
+                fallback["head"] = "";
+                fallback["params"] = "";
+                fallback["example"] = "";
+                fallback["detail"] = response.content;
+                results.append(fallback);
+            }
+        } else {
+            // 错误情况也包装成一条
+            QVariantMap err;
+            err["name"] = "查询失败";
+            err["desc"] = response.errorMessage;
+            err["head"] = "";
+            err["params"] = "";
+            err["example"] = "";
+            err["detail"] = response.errorMessage;
+            results.append(err);
+        }
         emit searchResultReady(results);
         worker->deleteLater();
     });
