@@ -292,6 +292,7 @@ Window {
     //创建完成组件直接绑定信号自动让函数将apimodel更新
     Component.onCompleted: {
         loadConfig()
+        AppCore.loadApiKey("DeepSeek")
         AppCore.settingsChanged.connect(loadConfig)
 
         AppCore.searchResultReady.connect(function(results) {

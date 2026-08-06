@@ -131,6 +131,17 @@ private slots:
         int signalIndex = meta->indexOfSignal("searchResultReady(QVariantList)");
         QVERIFY(signalIndex >= 0);
     }
+
+    void test_settingsChanged_signal()
+    {
+        QSignalSpy spy(m_core, &AppCore::settingsChanged);
+
+        // 调用 saveApiSettings 应触发 settingsChanged
+        m_core->saveApiSettings("DeepSeek", "test-key", "https://test.com", "test-model");
+
+        // 等待信号（QtKeychain 异步，但 saveApiSettings 是同步的，信号应该立即发射）
+        QCOMPARE(spy.count(), 1);
+    }
 };
 
 QTEST_MAIN(TestAppCore)

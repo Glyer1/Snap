@@ -28,6 +28,7 @@ public:
     Q_INVOKABLE QString getApiKeyForCompany(const QString &company);
     Q_INVOKABLE QString getBaseUrlForCompany(const QString &company);
     Q_INVOKABLE QString getModelForCompany(const QString &company);
+    Q_INVOKABLE void loadApiKey(const QString company);
 
 signals:
     void searchResultReady(const QVariantList &results);

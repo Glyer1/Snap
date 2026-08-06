@@ -10,6 +10,7 @@ AppCore* AppCore::s_instance = nullptr;
 AppCore::AppCore(QObject *parent) : QObject(parent)
 {
     loadApiConfig();
+
 }
 
 AppCore* AppCore::instance()
@@ -27,6 +28,7 @@ AppCore* AppCore::create(QQmlEngine* qmlEngine, QJSEngine* jsEngine)
     return instance();
 }
 
+//加载apiUrl的默认地址
 void AppCore::loadApiConfig()
 {
     // 默认值（硬编码兜底）
@@ -86,6 +88,8 @@ void AppCore::searchApi(const QString &query, const QString company, const QStri
 
 void AppCore::loadApiKeyAndSearch(const QString &query, const QString company, const QString &modelUrl, const QString &modelName)
 {
+
+
     if (!m_passwordUtils) {
         qDebug() << "creating PasswordUtils";
         m_passwordUtils = new PasswordUtils(this);
@@ -107,6 +111,41 @@ void AppCore::loadApiKeyAndSearch(const QString &query, const QString company, c
     connect(m_passwordUtils, &PasswordUtils::apiKeyLoadFailed,
             this, [this](const QString &error) {
                 qDebug() << "读取 API Key 失败:" << error;
+            });
+
+    qDebug() << "qtkeychain获取连接成功\n" ;
+
+    //然后读取
+    m_passwordUtils->readApiKey(company);
+}
+
+
+void AppCore::loadApiKey(const QString company)
+{
+    qDebug() << "成功进入loadApiKey";
+
+    if (!m_passwordUtils) {
+        qDebug() << "creating PasswordUtils";
+        m_passwordUtils = new PasswordUtils(this);
+        qDebug() << "没有PasswordUtils，先创建一个";
+    }
+
+    // 断开旧的连接，防止重复连接
+    disconnect(m_passwordUtils, &PasswordUtils::apiKeyLoaded, this, nullptr);
+    disconnect(m_passwordUtils, &PasswordUtils::apiKeyLoadFailed, this, nullptr);
+
+    // 连接信号
+    connect(m_passwordUtils, &PasswordUtils::apiKeyLoaded,
+            this, [this](const QString &key) {
+                m_apiKey = key;
+                qDebug() << "API Key 已自动加载";
+            });
+
+    qDebug() << "qtkeychain连接成功\n" ;
+
+    connect(m_passwordUtils, &PasswordUtils::apiKeyLoadFailed,
+            this, [this](const QString &error) {
+                qDebug() << "加载 API Key 失败:" << error;
             });
 
     qDebug() << "qtkeychain获取连接成功\n" ;

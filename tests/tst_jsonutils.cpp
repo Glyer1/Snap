@@ -388,6 +388,65 @@ private slots:
         JsonUtils utils(&parent);
         QCOMPARE(utils.parent(), &parent);
     }
+
+    void test_parseApiResponse_singleApi()
+    {
+        QString input = "api名字:QFile\n"
+                        "api需引入头:#include <QFile>\n"
+                        "api解释:文件操作类\n"
+                        "api参数解释:无\n"
+                        "api示例:QFile file(\"a.txt\");\n"
+                        "api说明:打开文件\n";
+
+        QVariantList result = JsonUtils::parseApiResponse(input);
+
+        QCOMPARE(result.size(), 1);
+        QVariantMap map = result[0].toMap();
+        QCOMPARE(map["name"].toString(), QString("QFile"));
+        QCOMPARE(map["head"].toString(), QString("#include <QFile>"));
+        QCOMPARE(map["desc"].toString(), QString("文件操作类"));
+        QCOMPARE(map["params"].toString(), QString("无"));
+        QCOMPARE(map["example"].toString(), QString("QFile file(\"a.txt\");"));
+        QCOMPARE(map["detail"].toString(), QString("打开文件"));
+    }
+
+    void test_parseApiResponse_multipleApis()
+    {
+        QString input = "api名字:QFile\n"
+                        "api需引入头:#include <QFile>\n"
+                        "api解释:文件操作类\n"
+                        "api参数解释:无\n"
+                        "api示例:QFile file(\"a.txt\");\n"
+                        "api说明:打开文件\n"
+                        "\n"
+                        "api名字:QString\n"
+                        "api需引入头:#include <QString>\n"
+                        "api解释:字符串类\n"
+                        "api参数解释:无\n"
+                        "api示例:QString str = \"hello\";\n"
+                        "api说明:字符串操作\n";
+
+        QVariantList result = JsonUtils::parseApiResponse(input);
+
+        QCOMPARE(result.size(), 2);
+        QCOMPARE(result[0].toMap()["name"].toString(), QString("QFile"));
+        QCOMPARE(result[1].toMap()["name"].toString(), QString("QString"));
+    }
+
+    void test_parseApiResponse_empty()
+    {
+        QString input = "";
+        QVariantList result = JsonUtils::parseApiResponse(input);
+        QVERIFY(result.isEmpty());
+    }
+
+    void test_parseApiResponse_invalidFormat()
+    {
+        QString input = "这是不规范的文本";
+        QVariantList result = JsonUtils::parseApiResponse(input);
+        // 应该返回空列表，因为解析失败
+        QVERIFY(result.isEmpty());
+    }
 };
 
 QTEST_MAIN(TestJsonUtils)

@@ -8,23 +8,24 @@ PasswordUtils::PasswordUtils(QObject *parent)
 //存入api_key键值对。
 void PasswordUtils::storeApiKey(const QString &key, const QString company)
 {
-    //创建对象并且存入键值对。
-    QKeychain::WritePasswordJob job(QLatin1String("Snap"));
-    job.setAutoDelete(false);
-    //需要转接再打开条目
-    job.setKey(QLatin1String((QStringLiteral("api_key")+company).toLatin1()));
-    job.setTextData(key);//存储的实际apikey
+    qDebug() << "正在进行storeApiKey";
 
-    QObject::connect(&job, &QKeychain::WritePasswordJob::finished,
+    auto *job = new QKeychain::WritePasswordJob(QLatin1String("Snap"));  // ← 堆上创建
+    job->setAutoDelete(true);  // 完成后自动销毁
+    job->setKey(QLatin1String((QStringLiteral("api_key") + company).toLatin1()));
+    job->setTextData(key);
+
+    QObject::connect(job, &QKeychain::WritePasswordJob::finished,
                      [](QKeychain::Job *job) {
                          if (job->error()) {
                              qDebug() << "存储失败:" << job->errorString();
                          } else {
                              qDebug() << "API Key 存储成功!";
                          }
-                     }
-                     );
-    job.start();
+                     });
+
+    job->start();
+    qDebug() << "存储apikey job.start();";
 }
 
 //读apikey
