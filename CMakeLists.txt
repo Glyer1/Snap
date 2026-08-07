@@ -12,6 +12,7 @@ if(BUILD_TESTS)
     list(APPEND QT_COMPONENTS Test)
 endif()
 find_package(Qt6 REQUIRED COMPONENTS ${QT_COMPONENTS})
+find_package(Qt6 REQUIRED COMPONENTS Quick Sql)
 qt_standard_project_setup(REQUIRES 6.8)
 
 # Build qtkeychain from thirdparty source (Windows)
@@ -54,6 +55,7 @@ qt_add_qml_module(appSnap
         SOURCES resources/src/utils/passwordutils.h resources/src/utils/passwordutils.cpp
         QML_FILES resources/qml/pages/SettingsPage.qml
         SOURCES resources/src/utils/clipboardutils.h resources/src/utils/clipboardutils.cpp
+        SOURCES resources/src/database/dbmanager.h resources/src/database/dbmanager.cpp
 )
 
 target_include_directories(appSnap PRIVATE
@@ -63,6 +65,7 @@ target_include_directories(appSnap PRIVATE
 target_link_libraries(appSnap
     PRIVATE Qt6::Quick
     qt6keychain
+    Qt6::Sql
 )
 
 set_target_properties(appSnap PROPERTIES
@@ -97,8 +100,9 @@ if(BUILD_TESTS)
         resources/src/utils/jsonutils.cpp
         resources/src/utils/passwordutils.h
         resources/src/utils/passwordutils.cpp
+        resources/src/database/dbmanager.cpp
     )
-    set(TEST_LIBS Qt6::Core Qt6::Quick Qt6::Test qt6keychain)
+    set(TEST_LIBS Qt6::Core Qt6::Quick Qt6::Sql Qt6::Test qt6keychain)
 
     add_executable(tst_jsonutils
         ${TEST_SOURCES}

@@ -1,4 +1,5 @@
 #include "AppCore.h"
+#include "./database/dbmanager.h"
 #include <QDebug>
 #include <QFile>
 #include <QCoreApplication>
@@ -215,6 +216,11 @@ void AppCore::doSearch(const QString &query, const QString &modelUrl, const QStr
             err["example"] = "";
             err["detail"] = response.errorMessage;
             results.append(err);
+        }
+
+        //存储到数据库
+        if (results.size() > 0) {
+            DBManager::instance()->saveApiResults(results);
         }
         emit searchResultReady(results);
         worker->deleteLater();

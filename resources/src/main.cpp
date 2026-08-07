@@ -3,6 +3,7 @@
 #include <QDir>
 #include <QQmlContext>
 #include "./utils/clipboardutils.h"
+#include "./database/dbmanager.h"
 
 int main(int argc, char *argv[])
 {
@@ -16,6 +17,9 @@ int main(int argc, char *argv[])
         []() { QCoreApplication::exit(-1); },
         Qt::QueuedConnection);
     engine.addImportPath(QDir::currentPath() + "/.qt/qml");
+
+    // 初始化数据库
+    DBManager::instance()->initDatabase();
 
     ClipboardUtils clipboradUtilsManager;
     engine.rootContext()->setContextProperty("clipboradUtilsManager", &clipboradUtilsManager);
