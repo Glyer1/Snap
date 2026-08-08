@@ -27,6 +27,7 @@ DBManager* DBManager::instance()
     return s_instance;
 }
 
+//初始化数据库-创建文件
 bool DBManager::initDatabase(const QString &dbPath)
 {
     // 确定数据库文件路径（默认在应用程序目录下）
@@ -56,6 +57,7 @@ bool DBManager::initDatabase(const QString &dbPath)
     return createTable();
 }
 
+//创建api查询后收录结果的表
 bool DBManager::createTable()
 {
     QString sql = R"(
@@ -81,6 +83,7 @@ bool DBManager::createTable()
     return true;
 }
 
+//插入或者替代
 bool DBManager::insertOrReplace(const QVariantMap &apiData)
 {
     QString sql = R"(
@@ -108,6 +111,50 @@ bool DBManager::insertOrReplace(const QVariantMap &apiData)
     return true;
 }
 
+//获取历史搜索过的api列表
+void DBManager::getHistoryList()
+{
+    QString sql = R"(SELECT * FROM api_cache)";
+
+    QVariantList result;
+
+    QSqlQuery query;
+    query.prepare(sql);
+
+    //执行，并且进行失败处理
+    if(!query.exec())
+    {
+        qDebug()<<"查询数据失败";
+        QVariantMap map;
+        map["name"] = "";
+        map["head"] = "";
+        map["desc"] = "";
+        map["example"] = "";
+        map["params"] = "";
+        map["detail"] = "";
+        result.append(map);
+        emit getHistoryListFailed(result);
+    }
+
+    //存储
+    while(query.next())
+    {
+        QVariantMap map;
+        map["name"] = query.value(0);
+        map["head"] = query.value(1);
+        map["desc"] = query.value(2);
+        map["example"] = query.value(3);
+        map["params"] = query.value(4);
+        map["detail"] = query.value(5);
+
+        result.append(map);
+    }
+
+    emit getHistoryListSuccess(result);
+
+}
+
+//保存api查询结果
 bool DBManager::saveApiResults(const QVariantList &results)
 {
     if (results.isEmpty()) {

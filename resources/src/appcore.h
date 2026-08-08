@@ -29,10 +29,12 @@ public:
     Q_INVOKABLE QString getBaseUrlForCompany(const QString &company);
     Q_INVOKABLE QString getModelForCompany(const QString &company);
     Q_INVOKABLE void loadApiKey(const QString company);
+    Q_INVOKABLE void loadHistoryList();
 
 signals:
     void searchResultReady(const QVariantList &results);
     void settingsChanged();
+    void historyListLoaded(const QVariantList &results);
 
 private:
     explicit AppCore(QObject *parent = nullptr);

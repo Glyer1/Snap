@@ -12,6 +12,7 @@ Window {
     color: "#FFFFFF"
 
     property var settingsPage: null
+    property var historyPage: null
     property string currentCompany: "DeepSeek"
     property string currentBaseUrl: "https://api.deepseek.com/anthropic/v1/messages"
     property string currentModel: "deepseek-v4-flash"
@@ -259,35 +260,68 @@ Window {
         }
     }
 
-    //设置按钮
-    Button {
-        anchors.bottom: parent.bottom
-        anchors.right: parent.right
-        anchors.margins: 16
-        text: "⚙️ 设置"
-        flat: true
-        onClicked: {
-            if (settingsPage) {
-                settingsPage.show()
-                settingsPage.loadSettings()
-            } else {
-                settingsLoader.active = true
+        //设置按钮
+        Button {
+            anchors.bottom: parent.bottom
+            anchors.right: parent.right
+            anchors.margins: 16
+            text: "⚙️ 设置"
+            flat: true
+            onClicked: {
+                if (settingsPage) {
+                    settingsPage.show()
+                    settingsPage.loadSettings()
+                } else {
+                    settingsLoader.active = true
+                }
             }
         }
-    }
 
-    Loader {
-        id: settingsLoader
-        active: false
-        source: "./pages/SettingsPage.qml"
-        onLoaded: {
-            settingsPage = item
-            settingsPage.show()
-            if (typeof settingsPage.loadSettings === "function") {
-                settingsPage.loadSettings()
+        Loader {
+            id: settingsLoader
+            active: false
+            source: "./pages/SettingsPage.qml"
+            onLoaded: {
+                settingsPage = item
+                settingsPage.show()
+                if (typeof settingsPage.loadSettings === "function") {
+                    settingsPage.loadSettings()
+                }
             }
         }
-    }
+
+        Button {
+            anchors.bottom: parent.bottom
+            anchors.left: parent.left
+            anchors.margins: 16
+            text: "历史记录"
+            flat: true
+            onClicked: {
+                if(historyPage)
+                {
+                    historyPage.show()
+                    historyPage.load()
+                }
+                else
+                {
+                    historyLoader.active = true;
+                }
+            }
+        }
+
+        Loader {
+            id: historyLoader
+            active: false
+            source: "./pages/HistoryPage.qml"
+            onLoaded: {
+                historyPage = item
+                historyPage.show()
+                if(typeof historyPage.load() === "function"){
+                    historyPage.load()
+                }
+            }
+        }
+
 
     //创建完成组件直接绑定信号自动让函数将apimodel更新
     Component.onCompleted: {

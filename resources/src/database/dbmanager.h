@@ -20,6 +20,8 @@ public:
     // 后续扩展：按名字查询
     // QVariantList searchByName(const QString &keyword);
 
+    //获取历史api列表
+    void getHistoryList();
 private:
     explicit DBManager(QObject *parent = nullptr);
     ~DBManager();
@@ -29,6 +31,10 @@ private:
 
     QSqlDatabase m_db;
     static DBManager* s_instance;
+
+signals:
+    void getHistoryListSuccess(QVariantList result);
+    void getHistoryListFailed(QVariantList result);
 };
 
 #endif // DBMANAGER_H

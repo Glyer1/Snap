@@ -56,6 +56,7 @@ qt_add_qml_module(appSnap
         QML_FILES resources/qml/pages/SettingsPage.qml
         SOURCES resources/src/utils/clipboardutils.h resources/src/utils/clipboardutils.cpp
         SOURCES resources/src/database/dbmanager.h resources/src/database/dbmanager.cpp
+        QML_FILES resources/qml/pages/HistoryPage.qml
 )
 
 target_include_directories(appSnap PRIVATE

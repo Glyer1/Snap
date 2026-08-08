@@ -11,7 +11,10 @@ AppCore* AppCore::s_instance = nullptr;
 AppCore::AppCore(QObject *parent) : QObject(parent)
 {
     loadApiConfig();
-
+    connect(DBManager::instance(), &DBManager::getHistoryListSuccess,
+            this, &AppCore::historyListLoaded);
+    connect(DBManager::instance(), &DBManager::getHistoryListFailed,
+            this, &AppCore::historyListLoaded);
 }
 
 AppCore* AppCore::instance()
@@ -70,6 +73,7 @@ bool AppCore::isWebSearchEnabled() const
     return m_webSearchEnabled;
 }
 
+//检测是否加载过apikey，没有就加载然后进行dosearch
 void AppCore::searchApi(const QString &query, const QString company, const QString &modelUrl, const QString &modelName)
 {
 
@@ -87,6 +91,7 @@ void AppCore::searchApi(const QString &query, const QString company, const QStri
     doSearch(query, modelUrl, modelName);
 }
 
+//加载apikey并且进行搜索
 void AppCore::loadApiKeyAndSearch(const QString &query, const QString company, const QString &modelUrl, const QString &modelName)
 {
 
@@ -104,6 +109,7 @@ void AppCore::loadApiKeyAndSearch(const QString &query, const QString company, c
     connect(m_passwordUtils, &PasswordUtils::apiKeyLoaded,
             this, [this, query, modelUrl, modelName](const QString &key) {
                 m_apiKey = key;
+                //apikey加载就进行搜索
                 doSearch(query, modelUrl, modelName);
             });
 
@@ -121,6 +127,7 @@ void AppCore::loadApiKeyAndSearch(const QString &query, const QString company, c
 }
 
 
+//在main.qml里头调用加载apikey
 void AppCore::loadApiKey(const QString company)
 {
     qDebug() << "成功进入loadApiKey";
@@ -155,6 +162,13 @@ void AppCore::loadApiKey(const QString company)
     m_passwordUtils->readApiKey(company);
 }
 
+//加载历史列表
+void AppCore::loadHistoryList()
+{
+    DBManager::instance()->getHistoryList();
+}
+
+//组装后用apiworker进行搜索
 void AppCore::doSearch(const QString &query, const QString &modelUrl, const QString &modelName)
 {
     // 确定实际 URL
@@ -238,8 +252,7 @@ void AppCore::doSearch(const QString &query, const QString &modelUrl, const QStr
     thread->start();
 }
 
-// AppCore.cpp 末尾添加
-
+//保存apisettings
 void AppCore::saveApiSettings(const QString &company, const QString &apiKey, const QString &baseUrl, const QString &model)
 {
     // 1. 存 API Key 到系统凭据
@@ -262,6 +275,7 @@ void AppCore::saveApiSettings(const QString &company, const QString &apiKey, con
     emit settingsChanged();
 }
 
+//获取apikey
 QString AppCore::getApiKeyForCompany(const QString &company)
 {
     // 从系统凭据读取
@@ -273,12 +287,14 @@ QString AppCore::getApiKeyForCompany(const QString &company)
     return m_apiKey;
 }
 
+//获得baseurl
 QString AppCore::getBaseUrlForCompany(const QString &company)
 {
     QSettings settings("Snap", "ApiConfig");
     return settings.value("baseUrl_" + company, "https://api.deepseek.com/anthropic/v1/messages").toString();
 }
 
+//获得模型选择
 QString AppCore::getModelForCompany(const QString &company)
 {
     QSettings settings("Snap", "ApiConfig");
