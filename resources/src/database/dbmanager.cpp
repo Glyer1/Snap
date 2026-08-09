@@ -54,6 +54,20 @@ bool DBManager::initDatabase(const QString &dbPath)
     }
 
     qDebug() << "数据库已打开:" << path;
+
+    // 设置词典路径（相对于应用程序目录或绝对路径）
+    QString appDir = QCoreApplication::applicationDirPath();
+    QString dictPath = appDir + "/dict/";
+
+    // 使用 cppjieba 的词典文件
+    m_jieba = std::make_shared<cppjieba::Jieba>(
+        (dictPath + "jieba.dict.utf8").toStdString(),
+        (dictPath + "hmm_model.utf8").toStdString(),
+        (dictPath + "user.dict.utf8").toStdString(),
+        (dictPath + "idf.utf8").toStdString(),
+        (dictPath + "stop_words.utf8").toStdString()
+        );
+
     return createTable();
 }
 
@@ -182,4 +196,77 @@ bool DBManager::saveApiResults(const QVariantList &results)
 
     qDebug() << "存储 API 结果完成:" << successCount << "/" << results.size();
     return successCount > 0;
+}
+
+//查询记录
+QVariantList DBManager::recordsInHistory(const QString& query)
+{
+    QVariantList result;
+    //将QString进行分割
+    QStringList keywords = splictQuery(query);
+    if(keywords.isEmpty())return result;
+
+    //查询sql用or进行查找关键字段。
+    QString sql = "SELECT * FROM api_cache WHERE";
+
+    QStringList conditions;
+    for (const QString& kw : keywords) {
+        // 防止 SQL 注入（简单转义）
+        QString safeKw = kw;
+        safeKw.replace("'", "''");
+        conditions << "name LIKE '%" + safeKw + "%'";
+        conditions << "head LIKE '%" + safeKw + "%'";
+        conditions << "desc LIKE '%" + safeKw + "%'";
+        conditions << "example LIKE '%" + safeKw + "%'";
+        conditions << "params LIKE '%" + safeKw + "%'";
+        conditions << "detail LIKE '%" + safeKw + "%'";
+
+    }
+    sql += "(" + conditions.join(" OR ") + ")";
+
+    //执行查询并填充结果
+    QSqlQuery queryObj;
+    queryObj.prepare(sql);
+    if (!queryObj.exec()) {
+        qDebug() << "searchLocal 执行失败:" << queryObj.lastError().text();
+        return result;
+    }
+
+    while (queryObj.next()) {
+        QVariantMap map;
+        map["name"] = queryObj.value(0);
+        map["head"] = queryObj.value(1);
+        map["desc"] = queryObj.value(2);
+        map["example"] = queryObj.value(3);
+        map["params"] = queryObj.value(4);
+        map["detail"] = queryObj.value(5);
+        result.append(map);
+    }
+
+    return result;
+
+}
+
+QStringList DBManager::splictQuery(const QString &query)
+{
+    if (!m_jieba) {
+        qWarning() << "Jieba 未初始化";
+        return {};
+    }
+
+    std::string utf8Query = query.toUtf8().toStdString();
+    std::vector<std::string> words;
+
+    // 使用精确模式分词
+    m_jieba->Cut(utf8Query, words, true);  // true 表示使用 HMM
+
+    QStringList result;
+    for (const auto& w : words) {
+        QString word = QString::fromUtf8(w.c_str());
+        if (word.length() >= 2) {  // 过滤单字和标点
+            result.append(word);
+        }
+    }
+
+    return result;
 }

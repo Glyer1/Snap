@@ -76,6 +76,15 @@ bool AppCore::isWebSearchEnabled() const
 //检测是否加载过apikey，没有就加载然后进行dosearch
 void AppCore::searchApi(const QString &query, const QString company, const QString &modelUrl, const QString &modelName)
 {
+    //查询历史有无存储过该api本地优先
+    // 如果强制联网，跳过本地搜索
+    if (!m_forceOnlineSearch) {
+        QVariantList local = DBManager::instance()->recordsInHistory(query);
+        if (!local.isEmpty()) {
+            emit searchResultReady(local);
+            return;
+        }
+    }
 
     qDebug() << "进入AppCore.searchApi\n" ;
 
@@ -299,4 +308,14 @@ QString AppCore::getModelForCompany(const QString &company)
 {
     QSettings settings("Snap", "ApiConfig");
     return settings.value("model_" + company, "deepseek-v4-flash").toString();
+}
+
+void AppCore::setForceOnlineSearch(bool enabled)
+{
+    m_forceOnlineSearch = enabled;
+}
+
+bool AppCore::isForceOnlineSearch() const
+{
+    return m_forceOnlineSearch;
 }

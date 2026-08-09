@@ -105,6 +105,12 @@ Window {
 
                 onClicked: performSearch()
             }
+            CheckBox {
+                    id: forceOnlineCheck
+                    text: "强制联网"
+                    checked: false
+                    onCheckedChanged: AppCore.setForceOnlineSearch(checked)
+                }
         }
 
         //列表

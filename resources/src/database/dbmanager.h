@@ -4,6 +4,7 @@
 #include <QObject>
 #include <QSqlDatabase>
 #include <QVariantList>
+#include "../thirdparty/cppjieba/include/cppjieba/Jieba.hpp"
 
 class DBManager : public QObject
 {
@@ -22,6 +23,8 @@ public:
 
     //获取历史api列表
     void getHistoryList();
+    QVariantList recordsInHistory(const QString &query);
+    QStringList splictQuery(const QString &query);
 private:
     explicit DBManager(QObject *parent = nullptr);
     ~DBManager();
@@ -31,6 +34,7 @@ private:
 
     QSqlDatabase m_db;
     static DBManager* s_instance;
+    std::shared_ptr<cppjieba::Jieba> m_jieba;
 
 signals:
     void getHistoryListSuccess(QVariantList result);

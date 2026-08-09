@@ -31,6 +31,9 @@ public:
     Q_INVOKABLE void loadApiKey(const QString company);
     Q_INVOKABLE void loadHistoryList();
 
+    Q_INVOKABLE void setForceOnlineSearch(bool enabled);
+    Q_INVOKABLE bool isForceOnlineSearch() const;
+
 signals:
     void searchResultReady(const QVariantList &results);
     void settingsChanged();
@@ -47,6 +50,7 @@ private:
     QString m_apiKey;
     QString m_defaultModelUrl;
     bool m_webSearchEnabled = true;
+    bool m_forceOnlineSearch = false;
 };
 
 #endif // APPCORE_H
